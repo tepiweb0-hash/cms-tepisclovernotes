@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
-import { api } from '../services/api'
+import { useCmsData } from '../context/CmsDataContext'
 import { PageSkeleton } from '../components/loaders/PageSkeleton'
-import { useToast } from '../context/ToastContext'
+import { NotificationCenter } from '../components/notifications/NotificationCenter'
 
-export function DashboardPage() {
-  const [data, setData] = useState<any>(null); const toast = useToast()
-  useEffect(() => { api.bootstrap().then(setData).catch((e) => toast.push('error','Unable to load dashboard', e.message)) }, [])
-  if (!data) return <><header className="topbar"><div><p className="eyebrow">CMS</p><h2>Dashboard</h2></div></header><PageSkeleton /></>
-  const count=(name:string)=>data.collections?.[name]?.length ?? 0
-  return <><header className="topbar"><div><p className="eyebrow">CMS</p><h2>Dashboard</h2></div><div className="top-actions">🔔</div></header><section className="panel"><div className="stats-grid">{[['Artists',count('artists')],['Series',count('series')],['Episodes',count('episodes')],['News',count('news')],['Events',count('events')],['Media',count('media')],['Pages',count('pages')],['Notifications',count('notifications')]].map(([label,value])=><div className="stat" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div><div className="dashboard-note"><p className="eyebrow">Easy editing mode</p><h3>Edit the website by page, not by raw database tables.</h3><p>The new CMS keeps the simple workflow from your Apps Script version, while Firebase handles the data.</p></div></section></>
+export function DashboardPage(){
+  const {data,loading,error,refresh}=useCmsData()
+  if(loading)return <><header className="topbar"><div><p className="eyebrow">CMS</p><h2>Dashboard</h2></div></header><PageSkeleton/></>
+  if(error)return <section className="panel error-state"><h3>Unable to load dashboard</h3><p>{error}</p><button className="primary" onClick={()=>void refresh()}>Retry</button></section>
+  const count=(name:string)=>data?.collections?.[name]?.length||0
+  const cards=[['Artists',count('artists')],['Series',count('series')],['Episodes',count('episodes')],['News',count('news')],['Events',count('events')],['Media',count('media')],['Pages',count('pages')],['Notifications',count('notifications')]] as const
+  return <><header className="topbar"><div><p className="eyebrow">CMS</p><h2>Dashboard</h2><p className="top-description">Tepis Clover Notes content management system.</p></div><NotificationCenter/></header><section className="panel"><div className="stats-grid">{cards.map(([label,value])=><div className="stat" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div><div className="dashboard-note"><p className="eyebrow">Easy editing mode</p><h3>Edit the site page-by-page instead of working directly inside Firebase.</h3><p>Use Artists, Series, Episodes, Events, News and Media on the left. Saves, uploads and failures always show clear feedback.</p></div><div className="dashboard-checks"><div><b>✓</b><span>Firebase Authentication</span></div><div><b>✓</b><span>Firestore via Express API</span></div><div><b>✓</b><span>Cloudinary media uploads</span></div><div><b>✓</b><span>Loaders, progress and notifications</span></div></div></section></>
 }
