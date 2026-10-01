@@ -17,8 +17,9 @@ const ENUMS:Record<string,string[]>={
   status:['draft','published','archived','planned','airing','completed','active','released','scheduled','ready','external_seed'],
   template_key:['hero','split','showcase','card_grid','media_gallery'],
   display_mode:['single','carousel','fade','crossfade'],album_display_mode:['single','carousel','fade','crossfade'],
-  alignment:['left','right','center'],role_type:['lead','support','guest','cameo'],slot:['hero','current_series','artist_showcase','news','custom'],
+  alignment:['left','right','center'],role_type:['lead','support','guest','cameo'],slot:['hero','current_series','artist_showcase','artist_heading','news_heading','news','custom'],
   entity_type:['artist','series','episode','event','news','page','manual'],related_entity_type:['artist','series','episode','event','news','page','manual'],
+  role:['owner','admin','editor','viewer'],
 }
 
 const RELATIONS:Record<string,[string,string,string]>={
@@ -48,17 +49,28 @@ function groupFor(field:string,meta:CollectionMeta):GroupKey{
   if(MEDIA_RE.test(field)||LINK_RE.test(field)) return 'media'
   if(LONG_RE.test(field)) return 'content'
   if(/^(status|enabled|featured|hot|hot_score|indexable|open_new_tab|sort_order|priority|publish_at|published_at|publish_date|release_date|release_time|release_day|premiere_date|finale_date|start_date|end_date|start_time|end_time|created_at|updated_at|expires_at|date|timezone)$/.test(field)) return 'publishing'
-  if(field===meta.idField || /^(bytes|width|height|mime_type|format|asset_id|cloudinary_public_id|is_webp|editable|type|group|usage|interval_ms|transition_ms|status_code)$/.test(field)) return 'advanced'
+  if(field===meta.idField || /^(bytes|width|height|mime_type|format|asset_id|cloudinary_public_id|file_id|is_webp|editable|type|group|usage|interval_ms|transition_ms|status_code)$/.test(field)) return 'advanced'
   return 'basic'
 }
 
+function entityOptions(collections:Record<string,CmsRecord[]>,type:unknown){
+  const t=String(type||'')
+  const defs:Record<string,[string,string,string,string]>={
+    artist:['artists','artist_id','display_name','Artist'],
+    series:['series','series_id','title','Series'],
+    episode:['episodes','episode_id','title','Episode'],
+    event:['events','event_id','title','Event'],
+    news:['news','news_id','title','News'],
+    page:['pages','page_id','title','Page'],
+  }
+  const def=defs[t]
+  if(!def) return []
+  const [collection,id,label,prefix]=def
+  return (collections[collection]||[]).map((r)=>({value:String(r[id]||r.id||''),label:`${prefix} · ${String(r[label]||r[id]||r.id||'')}`}))
+}
+
 function relatedOptions(collections:Record<string,CmsRecord[]>){
-  return [
-    ...(collections.news||[]).map((r)=>({value:String(r.news_id||r.id||''),label:`News · ${r.title||r.news_id||r.id}`})),
-    ...(collections.events||[]).map((r)=>({value:String(r.event_id||r.id||''),label:`Event · ${r.title||r.event_id||r.id}`})),
-    ...(collections.episodes||[]).map((r)=>({value:String(r.episode_id||r.id||''),label:`Episode · ${r.title||r.episode_id||r.id}`})),
-    ...(collections.series||[]).map((r)=>({value:String(r.series_id||r.id||''),label:`Series · ${r.title||r.series_id||r.id}`})),
-  ]
+  return Object.keys({artist:1,series:1,episode:1,event:1,news:1,page:1}).flatMap((type)=>entityOptions(collections,type))
 }
 
 export function RecordEditor({open,meta,record,collections,saving,onClose,onSave,onArchive}:{open:boolean;meta:CollectionMeta;record:CmsRecord|null;collections:Record<string,CmsRecord[]>;saving:boolean;onClose:()=>void;onSave:(record:CmsRecord)=>Promise<void>;onArchive?:(record:CmsRecord)=>Promise<void>}){
@@ -92,7 +104,11 @@ export function RecordEditor({open,meta,record,collections,saving,onClose,onSave
   function setField(field:string,value:unknown){ setForm((v)=>({...v,[field]:value})) }
 
   function optionsFor(field:string){
-    if(field==='related_entity_id') return relatedOptions(collections)
+    if(field==='entity_id') return entityOptions(collections,form.entity_type)
+    if(field==='related_entity_id') {
+      const specific=entityOptions(collections,form.related_entity_type)
+      return specific.length?specific:relatedOptions(collections)
+    }
     const rel=RELATIONS[field]
     if(rel){ const [name,id,label]=rel; return (collections[name]||[]).map((r)=>({value:String(r[id]||r.id||''),label:String(r[label]||r[id]||r.id||'')})) }
     let values=ENUMS[field]

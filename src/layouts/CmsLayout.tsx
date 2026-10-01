@@ -18,9 +18,11 @@ export function CmsLayout(){
 
   const filteredGroups=useMemo(()=>{
     const q=navQuery.trim().toLowerCase()
-    if(!q) return navGroups
-    return navGroups.map((group)=>({...group,items:group.items.filter(([,label])=>label.toLowerCase().includes(q))})).filter((group)=>group.items.length)
-  },[navQuery])
+    return navGroups.map((group)=>({...group,items:group.items.filter(([to,label])=>{
+      if((to==='/users'||to==='/migration')&&role!=='owner') return false
+      return label.toLowerCase().includes(q)
+    })})).filter((group)=>group.items.length)
+  },[navQuery,role])
 
   async function logout(){
     try{await signOut(auth);navigate('/login')}

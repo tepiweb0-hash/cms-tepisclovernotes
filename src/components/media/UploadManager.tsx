@@ -3,6 +3,7 @@ import { api } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { useCmsData } from '../../context/CmsDataContext'
 import type { UploadState } from '../../types/cms'
+import { auth } from '../../firebase/client'
 
 type UploadItem={ id:string; file:File; name:string; progress:number; status:UploadState; error?:string }
 
@@ -36,7 +37,10 @@ function uploadCloudinary(url:string,form:FormData,onProgress:(p:number)=>void){
 export function UploadManager(){
   const [items,setItems]=useState<UploadItem[]>([])
   const [active,setActive]=useState(false)
-  const toast=useToast();const {upsert}=useCmsData()
+  const toast=useToast();const {upsert,collection}=useCmsData()
+  const uid=auth.currentUser?.uid
+  const profile=collection('cms_users').find((row)=>String(row.id||row.user_id||'')===String(uid||''))
+  const canUpload=['owner','admin','editor'].includes(String(profile?.role||'viewer'))
   const patch=(id:string,next:Partial<UploadItem>)=>setItems((current)=>current.map((item)=>item.id===id?{...item,...next}:item))
 
   async function run(item:UploadItem){
@@ -72,6 +76,8 @@ export function UploadManager(){
     for(const item of created) await run(item)
     setActive(false)
   }
+
+  if(!canUpload) return <section className="upload-card"><div className="upload-card-head"><div><p className="eyebrow">Media pipeline</p><h3>Media uploads are view-only</h3><p className="muted">Your current CMS role can browse media but cannot upload new files.</p></div></div></section>
 
   const success=items.filter((i)=>i.status==='success').length,error=items.filter((i)=>i.status==='error').length
   return <section className="upload-card"><div className="upload-card-head"><div><p className="eyebrow">Media pipeline</p><h3>Upload → optimize WebP → Cloudinary</h3><p className="muted">Images are resized to a maximum of 2200px, converted to WebP, uploaded with real progress, then registered in Firestore.</p></div><label className={`primary upload-button ${active?'disabled':''}`}>+ Upload images<input hidden disabled={active} type="file" accept="image/*" multiple onChange={(e)=>{void select(e.target.files);e.currentTarget.value='' }}/></label></div>

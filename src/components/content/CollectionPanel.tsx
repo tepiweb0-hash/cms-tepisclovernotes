@@ -6,6 +6,7 @@ import type { CmsRecord } from '../../types/cms'
 import { useToast } from '../../context/ToastContext'
 import { RecordEditor } from './RecordEditor'
 import { BusyOverlay } from '../loaders/BusyOverlay'
+import { auth } from '../../firebase/client'
 
 const CARD_COLLECTIONS=new Set(['artists','series','episodes','events','news','notifications','pages'])
 
@@ -33,6 +34,11 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
   const {data,collection,upsert,markArchived}=useCmsData()
   const toast=useToast()
   const rows=collection(collectionKey)
+  const uid=auth.currentUser?.uid
+  const profile=collection('cms_users').find((row)=>String(row.id||row.user_id||'')===String(uid||''))
+  const role=String(profile?.role||'viewer')
+  const canEditRole=['owner','admin','editor'].includes(role)
+  const canEdit=canEditRole && (collectionKey!=='cms_users'||role==='owner')
   const [query,setQuery]=useState('')
   const [filter,setFilter]=useState('all')
   const [sort,setSort]=useState('default')
@@ -90,10 +96,10 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
     finally{setSaving(false);setBusy('')}
   }
 
-  const canCreate=collectionKey!=='cms_users'
+  const canCreate=canEdit&&collectionKey!=='cms_users'&&collectionKey!=='media'
   return <section className="collection-panel easy-collection">
     <div className="collection-toolbar easy-toolbar">
-      <div className="collection-heading"><div><h3>{meta.label}</h3><span>{filtered.length===rows.length?`${rows.length} record${rows.length===1?'':'s'}`:`Showing ${filtered.length} of ${rows.length}`}</span></div>{meta.description&&<p>{meta.description}</p>}</div>
+      <div className="collection-heading"><div><h3>{meta.label}</h3><span>{filtered.length===rows.length?`${rows.length} record${rows.length===1?'':'s'}`:`Showing ${filtered.length} of ${rows.length}`}</span></div>{meta.description&&<p>{meta.description}</p>}{!canEdit&&<p className="muted">View-only access for your current CMS role.</p>}</div>
       <div className="toolbar-main-actions">{canCreate&&<button className="primary" onClick={()=>setEditing(null)}>+ Add {meta.label}</button>}</div>
     </div>
 
@@ -114,15 +120,15 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
     {viewMode==='cards'?<div className="record-grid">{filtered.length?filtered.map((row,index)=>{
       const subtitle=subtitleFor(row)
       const details=meta.display.filter((field)=>!['title','display_name','full_name','status','enabled'].includes(field)).slice(0,3)
-      return <article className="record-card" key={String(row.id||index)} onClick={()=>setEditing(row)}>
-        <div className="record-card-top"><div className="record-title-wrap"><strong>{titleFor(row)}</strong>{subtitle&&<span>{subtitle}</span>}</div><button className="secondary mini" onClick={(e)=>{e.stopPropagation();setEditing(row)}}>Edit</button></div>
+      return <article className={`record-card ${canEdit?'':'read-only'}`} key={String(row.id||index)} onClick={()=>{if(canEdit)setEditing(row)}}>
+        <div className="record-card-top"><div className="record-title-wrap"><strong>{titleFor(row)}</strong>{subtitle&&<span>{subtitle}</span>}</div>{canEdit&&<button className="secondary mini" onClick={(e)=>{e.stopPropagation();setEditing(row)}}>Edit</button>}</div>
         <div className="record-badges">{Boolean(row.status)&&<span className={`record-badge status-${String(row.status).toLowerCase()}`}>{labelize(String(row.status))}</span>}<span className={`record-badge ${enabled(row)?'shown':'hidden'}`}>{enabled(row)?'Shown':'Hidden'}</span></div>
         <dl>{details.map((field)=><div key={field}><dt>{labelize(field)}</dt><dd>{view(row[field])}</dd></div>)}</dl>
       </article>
     }):<div className="empty-state record-empty"><strong>No records found</strong><span>{query||filter!=='all'?'Clear your search or filters.':'Add your first record when you are ready.'}</span>{(query||filter!=='all')&&<button className="secondary mini" onClick={()=>{setQuery('');setFilter('all')}}>Clear filters</button>}</div>}</div>
-    :<div className="table-wrap"><table><thead><tr>{meta.display.map((field)=><th key={field}>{labelize(field)}</th>)}<th>Action</th></tr></thead><tbody>{filtered.length?filtered.map((row,index)=><tr key={String(row.id||index)} onClick={()=>setEditing(row)}>{meta.display.map((field)=><td key={field}>{field==='status'?<span className="status-pill">{view(row[field])}</span>:view(row[field])}</td>)}<td><button className="secondary mini" onClick={(e)=>{e.stopPropagation();setEditing(row)}}>Edit</button></td></tr>):<tr><td colSpan={meta.display.length+1}><div className="empty-state"><strong>No records found</strong><span>{query?'Try another search.':'Add your first record when you are ready.'}</span></div></td></tr>}</tbody></table></div>}
+    :<div className="table-wrap"><table><thead><tr>{meta.display.map((field)=><th key={field}>{labelize(field)}</th>)}<th>Action</th></tr></thead><tbody>{filtered.length?filtered.map((row,index)=><tr key={String(row.id||index)} onClick={()=>{if(canEdit)setEditing(row)}}>{meta.display.map((field)=><td key={field}>{field==='status'?<span className="status-pill">{view(row[field])}</span>:view(row[field])}</td>)}<td>{canEdit?<button className="secondary mini" onClick={(e)=>{e.stopPropagation();setEditing(row)}}>Edit</button>:<span className="muted">View only</span>}</td></tr>):<tr><td colSpan={meta.display.length+1}><div className="empty-state"><strong>No records found</strong><span>{query?'Try another search.':'Add your first record when you are ready.'}</span></div></td></tr>}</tbody></table></div>}
 
-    <RecordEditor open={editing!==undefined} meta={meta} record={editing||null} collections={data?.collections||{}} saving={saving} onClose={()=>setEditing(undefined)} onSave={save} onArchive={editing?archive:undefined}/>
+    <RecordEditor open={canEdit&&editing!==undefined} meta={meta} record={editing||null} collections={data?.collections||{}} saving={saving} onClose={()=>setEditing(undefined)} onSave={save} onArchive={editing?archive:undefined}/>
     {busy&&<BusyOverlay title={busy} detail="Please wait while the CMS updates Firebase."/>}
   </section>
 }
