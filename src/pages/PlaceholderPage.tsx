@@ -1,0 +1,2 @@
+import { useLocation } from 'react-router-dom'
+export function PlaceholderPage(){ const { pathname }=useLocation(); const title=pathname.split('/').filter(Boolean).pop()?.replace(/-/g,' ') || 'CMS'; return <><header className="topbar"><div><p className="eyebrow">CMS module</p><h2>{title.replace(/\b\w/g,(c)=>c.toUpperCase())}</h2></div></header><section className="panel"><h3>Fresh module shell ready</h3><p>This screen will be rebuilt from the matching Apps Script CMS feature, using Firebase data and the new loader/toast system.</p></section></> }
