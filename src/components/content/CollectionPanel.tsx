@@ -116,7 +116,7 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
       const details=meta.display.filter((field)=>!['title','display_name','full_name','status','enabled'].includes(field)).slice(0,3)
       return <article className="record-card" key={String(row.id||index)} onClick={()=>setEditing(row)}>
         <div className="record-card-top"><div className="record-title-wrap"><strong>{titleFor(row)}</strong>{subtitle&&<span>{subtitle}</span>}</div><button className="secondary mini" onClick={(e)=>{e.stopPropagation();setEditing(row)}}>Edit</button></div>
-        <div className="record-badges">{row.status&&<span className={`record-badge status-${String(row.status).toLowerCase()}`}>{labelize(String(row.status))}</span>}<span className={`record-badge ${enabled(row)?'shown':'hidden'}`}>{enabled(row)?'Shown':'Hidden'}</span></div>
+        <div className="record-badges">{Boolean(row.status)&&<span className={`record-badge status-${String(row.status).toLowerCase()}`}>{labelize(String(row.status))}</span>}<span className={`record-badge ${enabled(row)?'shown':'hidden'}`}>{enabled(row)?'Shown':'Hidden'}</span></div>
         <dl>{details.map((field)=><div key={field}><dt>{labelize(field)}</dt><dd>{view(row[field])}</dd></div>)}</dl>
       </article>
     }):<div className="empty-state record-empty"><strong>No records found</strong><span>{query||filter!=='all'?'Clear your search or filters.':'Add your first record when you are ready.'}</span>{(query||filter!=='all')&&<button className="secondary mini" onClick={()=>{setQuery('');setFilter('all')}}>Clear filters</button>}</div>}</div>
