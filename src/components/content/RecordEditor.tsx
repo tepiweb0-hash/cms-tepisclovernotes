@@ -73,6 +73,19 @@ export function RecordEditor({open,meta,record,collections,saving,onClose,onSave
     const fn=(e:BeforeUnloadEvent)=>{ e.preventDefault(); e.returnValue='' }
     window.addEventListener('beforeunload',fn); return()=>window.removeEventListener('beforeunload',fn)
   },[open,dirty])
+
+  // Keep every hook above the early return. React requires hooks to run in the
+  // same order on every render; placing the groups useMemo below `if (!open)`
+  // caused invariant #310 when the editor changed from closed to open.
+  const groups=useMemo(()=>{
+    const result:Record<GroupKey,string[]>={basic:[],content:[],media:[],publishing:[],seo:[],advanced:[]}
+    meta.fields.forEach((field)=>{
+      if(field===meta.idField && !record && isGeneratedId(field)) return
+      result[groupFor(field,meta)].push(field)
+    })
+    return result
+  },[meta,record])
+
   if(!open) return null
 
   function requestClose(){ if(dirty&&!saving) setDiscard(true); else onClose() }
@@ -87,15 +100,6 @@ export function RecordEditor({open,meta,record,collections,saving,onClose,onSave
     if(values) return values.map((v)=>({value:v,label:labelize(v)}))
     return null
   }
-
-  const groups=useMemo(()=>{
-    const result:Record<GroupKey,string[]>={basic:[],content:[],media:[],publishing:[],seo:[],advanced:[]}
-    meta.fields.forEach((field)=>{
-      if(field===meta.idField && !record && isGeneratedId(field)) return
-      result[groupFor(field,meta)].push(field)
-    })
-    return result
-  },[meta,record])
 
   function mediaPreview(field:string,value:unknown){
     if(!MEDIA_RE.test(field)||!value) return null
