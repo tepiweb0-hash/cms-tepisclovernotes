@@ -42,3 +42,6 @@ Then redeploy the API. Without this step, browser API calls will be blocked by C
 
 ## Database migration
 The Administration → Migration page accepts the legacy Google Sheets workbook exported as `.xlsx`, previews sheet counts, skips legacy CMS users/change logs, and imports records to Firestore through the owner-only Express migration endpoint. Existing matching document IDs are merged.
+
+## Easy editing UI
+This build keeps the same Firebase/Express/Cloudinary backend but simplifies day-to-day editing with searchable navigation, quick actions, card/table views, filters, grouped editor sections, media previews, slug generation, and hidden advanced fields.
