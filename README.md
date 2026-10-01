@@ -39,3 +39,6 @@ CMS_ORIGIN=https://your-cms-domain.vercel.app
 ```
 
 Then redeploy the API. Without this step, browser API calls will be blocked by CORS.
+
+## Database migration
+The Administration → Migration page accepts the legacy Google Sheets workbook exported as `.xlsx`, previews sheet counts, skips legacy CMS users/change logs, and imports records to Firestore through the owner-only Express migration endpoint. Existing matching document IDs are merged.

@@ -3,6 +3,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { MediaPage } from './pages/MediaPage'
 import { ContentPage } from './pages/ContentPage'
+import { MigrationPage } from './pages/MigrationPage'
 import { CmsLayout } from './layouts/CmsLayout'
 import { AuthGuard } from './components/AuthGuard'
 import { CmsDataProvider } from './context/CmsDataContext'
@@ -23,6 +24,7 @@ export default function App(){
       <Route path="/site" element={<ContentPage page="site"/>}/>
       <Route path="/theme" element={<ContentPage page="theme"/>}/>
       <Route path="/users" element={<ContentPage page="users"/>}/>
+      <Route path="/migration" element={<MigrationPage/>}/>
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
   </Routes>

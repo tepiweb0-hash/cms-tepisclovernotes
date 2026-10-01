@@ -22,6 +22,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T
 }
 
+
+export type MigrationResponse = {
+  ok: true
+  sheet: string
+  collection: string
+  imported: number
+  skipped: Array<{ index: number; reason: string }>
+}
+
 export type MediaSignature = {
   cloudName: string
   apiKey: string
@@ -39,4 +48,5 @@ export const api = {
   archive: (collection: string, id: string) => request<{ ok: true; id: string }>(`/content/${collection}/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
   mediaSignature: () => request<MediaSignature>('/media/signature', { method: 'POST', body: '{}' }),
   registerMedia: (record: CmsRecord) => request<CmsRecord>('/media/register', { method: 'POST', body: JSON.stringify(record) }),
+  migrateSheet: (sheet: string, records: Record<string, unknown>[]) => request<MigrationResponse>('/migration/import', { method: 'POST', body: JSON.stringify({ sheet, records }) }),
 }
