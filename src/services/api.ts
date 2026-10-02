@@ -49,4 +49,7 @@ export const api = {
   mediaSignature: () => request<MediaSignature>('/media/signature', { method: 'POST', body: '{}' }),
   registerMedia: (record: CmsRecord) => request<CmsRecord>('/media/register', { method: 'POST', body: JSON.stringify(record) }),
   migrateSheet: (sheet: string, records: Record<string, unknown>[]) => request<MigrationResponse>('/migration/import', { method: 'POST', body: JSON.stringify({ sheet, records }) }),
+  createUser: (record: {display_name:string;email:string;password:string;role:string;enabled:boolean;notes?:string}) => request<CmsRecord>('/users', { method:'POST', body: JSON.stringify(record) }),
+  updateUser: (uid:string, record: {display_name:string;email:string;role:string;enabled:boolean;notes?:string}) => request<CmsRecord>(`/users/${encodeURIComponent(uid)}`, { method:'PATCH', body: JSON.stringify(record) }),
+  disableUser: (uid:string) => request<CmsRecord>(`/users/${encodeURIComponent(uid)}/disable`, { method:'POST', body:'{}' }),
 }

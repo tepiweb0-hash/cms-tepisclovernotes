@@ -45,7 +45,7 @@ export function CmsDataProvider({children}:{children:ReactNode}){
     setData((current)=>{
       if(!current) return current
       const rows=current.collections[name] || []
-      return {...current,collections:{...current.collections,[name]:rows.map((row)=>String(row.id)===id?{...row,enabled:false,status:'archived'}:row)}}
+      return {...current,collections:{...current.collections,[name]:rows.map((row)=>String(row.id)===id?{...row,enabled:false,publication_status:'archived'}:row)}}
     })
   }
 

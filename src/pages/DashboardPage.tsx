@@ -2,12 +2,16 @@ import { Link } from 'react-router-dom'
 import { useCmsData } from '../context/CmsDataContext'
 import { PageSkeleton } from '../components/loaders/PageSkeleton'
 import { NotificationCenter } from '../components/notifications/NotificationCenter'
+import { auth } from '../firebase/client'
 
 export function DashboardPage(){
   const {data,loading,error,refresh}=useCmsData()
   if(loading)return <><header className="topbar"><div><p className="eyebrow">CMS</p><h2>Dashboard</h2></div></header><PageSkeleton/></>
   if(error)return <section className="panel error-state"><h3>Unable to load dashboard</h3><p>{error}</p><button className="primary" onClick={()=>void refresh()}>Retry</button></section>
   const count=(name:string)=>data?.collections?.[name]?.length||0
+  const uid=auth.currentUser?.uid||''
+  const me=(data?.collections?.cms_users||[]).find((row)=>String(row.id||row.user_id||'')===uid)
+  const isOwner=String(me?.role||'')==='owner'
   const cards=[
     ['Artists',count('artists'),'/artists'],['Series',count('series'),'/series'],['Episodes',count('episodes'),'/episodes'],['News',count('news'),'/news'],
     ['Events',count('events'),'/events'],['Media',count('media'),'/media'],['Pages',count('pages'),'/home'],['Notifications',count('notifications'),'/notifications']
@@ -18,6 +22,7 @@ export function DashboardPage(){
     ['+ Add episode','/episodes?new=episodes','Add the next episode'],
     ['+ Add news','/news?new=news','Publish a new story'],
     ['Upload media','/media','Add images to the media library'],
+    ...(isOwner ? [['+ Add user','/users','Create a Firebase login and CMS role']] as const : []),
   ] as const
 
   return <>
