@@ -56,7 +56,6 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
   const [query,setQuery]=useState('')
   const [filter,setFilter]=useState('all')
   const [sort,setSort]=useState('default')
-  const [group,setGroup]=useState(GROUP_BY_SERIES.has(collectionKey)?'series':'none')
   const [viewMode,setViewMode]=useState<'cards'|'table'>(CARD_COLLECTIONS.has(collectionKey)?'cards':'table')
   const [editing,setEditing]=useState<CmsRecord|null|undefined>(undefined)
   const [saving,setSaving]=useState(false)
@@ -64,7 +63,6 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
 
   useEffect(()=>{
     setQuery('');setFilter('all');setSort('default');setEditing(undefined)
-    setGroup(GROUP_BY_SERIES.has(collectionKey)?'series':'none')
     setViewMode(CARD_COLLECTIONS.has(collectionKey)?'cards':'table')
   },[collectionKey])
   useEffect(()=>{
@@ -91,7 +89,7 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
   },[rows,query,filter,sort])
 
   const grouped=useMemo(()=>{
-    if(group!=='series'||!GROUP_BY_SERIES.has(collectionKey)) return [{id:'all',title:'All records',rows:filtered}]
+    if(!GROUP_BY_SERIES.has(collectionKey)) return [{id:'all',title:'All records',rows:filtered}]
     const seriesRows=data?.collections?.series||[]
     const seriesCast=data?.collections?.series_cast||[]
     const byId=new Map(seriesRows.map((row)=>[String(row.series_id||row.id||''),String(row.title||'Untitled series')]))
@@ -113,7 +111,7 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
       return String(byId.get(a)||a).localeCompare(String(byId.get(b)||b),undefined,{numeric:true})
     })
     return order.map((id)=>({id,title:id==='unassigned'?'Not assigned to a series':byId.get(id)||id,rows:buckets.get(id)||[]}))
-  },[group,collectionKey,filtered,data])
+  },[collectionKey,filtered,data])
 
   async function save(form:CmsRecord,intent:SaveIntent){
     setSaving(true); setBusy(intent==='publish'?'Publishing…':intent==='draft'?'Saving draft…':'Saving changes…')
@@ -176,11 +174,10 @@ export function CollectionPanel({collectionKey,startNew=false,onStartNewHandled}
       <select aria-label="Sort records" value={sort} onChange={(e)=>setSort(e.target.value)}>
         <option value="default">Default order</option><option value="order">Display order</option><option value="newest">Newest first</option><option value="az">A → Z</option><option value="za">Z → A</option>
       </select>
-      {GROUP_BY_SERIES.has(collectionKey)&&<select aria-label="Group records" value={group} onChange={(e)=>setGroup(e.target.value)}><option value="series">Group by series</option><option value="none">No grouping</option></select>}
       <div className="view-toggle"><button className={viewMode==='cards'?'active':''} onClick={()=>setViewMode('cards')} title="Card view">▦</button><button className={viewMode==='table'?'active':''} onClick={()=>setViewMode('table')} title="Table view">☷</button></div>
     </div>
 
-    <div className="series-group-stack">{grouped.length?grouped.map((bucket)=><section className="series-group" key={bucket.id}>{group==='series'&&<div className="series-group-head"><div><span>Series</span><h4>{bucket.title}</h4></div><b>{bucket.rows.length}</b></div>}{viewMode==='cards'?<div className="record-grid">{bucket.rows.length?bucket.rows.map(renderCard):<div className="empty-state record-empty"><strong>No records found</strong><span>Try another search or filter.</span></div>}</div>:renderTable(bucket.rows)}</section>):<div className="empty-state record-empty"><strong>No records found</strong><span>{query||filter!=='all'?'Clear your search or filters.':'Add your first record when you are ready.'}</span></div>}</div>
+    <div className="series-group-stack">{grouped.length?grouped.map((bucket)=><section className="series-group" key={bucket.id}>{GROUP_BY_SERIES.has(collectionKey)&&<div className="series-group-head"><div><span>Series</span><h4>{bucket.title}</h4></div><b>{bucket.rows.length}</b></div>}{viewMode==='cards'?<div className="record-grid">{bucket.rows.length?bucket.rows.map(renderCard):<div className="empty-state record-empty"><strong>No records found</strong><span>Try another search or filter.</span></div>}</div>:renderTable(bucket.rows)}</section>):<div className="empty-state record-empty"><strong>No records found</strong><span>{query||filter!=='all'?'Clear your search or filters.':'Add your first record when you are ready.'}</span></div>}</div>
 
     <RecordEditor open={canEdit&&editing!==undefined} meta={meta} record={editing||null} collections={data?.collections||{}} saving={saving} onClose={()=>setEditing(undefined)} onSave={save} onArchive={editing?archive:undefined}/>
     {busy&&<BusyOverlay title={busy} detail="Please wait while the CMS updates Firebase."/>}
